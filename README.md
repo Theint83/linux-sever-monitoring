@@ -1,3 +1,31 @@
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+# linux-sever-monitoring
+Linux Web Server Monitoring System
+##Project Objective
+To monitor the performance, status, resources, network
+activity, and logs of a Linux web server through a 
+centralized monitoring system
+
+## Technologies
+-Ubantu Linux
+-Apache Web Server
+-Python
+-Flask
+-Html/CSS/JavaScript
+-SQLite
+
+## Main Features
+-Web Server Log Collection
+-log Analysis
+-Traffic Monitoring
+-Error Monitoring
+-Suspicious Activity Detection
+-Web Dashboard
+-Alert System
+=======
+>>>>>>> 61f7355
 Linux Web Server Monitoring System
 Memberr 1- Web Server Setup
 -Server IP:192.168.10.2
@@ -11,3 +39,7 @@ Access Log Path: /var/log/apache2/access.log
 2.Installed Apache Web Server(sudo apt install apache2)
 Enable and started Apache service
 Verified connection from Clientd VM via HTTP
+<<<<<<< HEAD
+=======
+>>>>>>> aaa462c (Member 1: Setup Apache Web Server and README)
+>>>>>>> 61f7355
