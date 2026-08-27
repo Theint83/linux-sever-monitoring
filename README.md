@@ -1,9 +1,9 @@
 # linux-sever-monitoring
-Linux Server Performance and Web Monitoring System
+Linux Web Server Monitoring System
 ##Project Objective
-To analyze Linux web server logs and
-monitor web traffic, errors, server logs and
-suspicious sctivities.
+To monitor the performance, status, resources, network
+activity, and logs of a Linux web server through a 
+centralized monitoring system
 
 ## Technologies
 -Ubantu Linux
