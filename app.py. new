@@ -1,0 +1,54 @@
+from flask import Flask, jsonify
+from flask_cors import CORS
+import sqlite3
+import os
+
+app = Flask(__name__)
+CORS(app)
+
+def get_db_connection():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, "monitoring.db")
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def get_latest_system_info():
+    conn = get_db_connection()
+    data = conn.execute("SELECT * FROM system_resources ORDER BY id DESC LIMIT 1").fetchone()
+    conn.close()
+    return dict(data) if data else {}
+
+def get_latest_network_info():
+    conn = get_db_connection()
+    data = conn.execute("SELECT * FROM network_stats ORDER BY id DESC LIMIT 1").fetchone()
+    conn.close()
+    return dict(data) if data else {}
+
+def get_recent_logs():
+    conn = get_db_connection()
+    logs = conn.execute("SELECT * FROM server_logs ORDER BY id DESC LIMIT 10").fetchall()
+    conn.close()
+    return [dict(log) for log in logs]
+
+def get_security_alerts():
+    conn = get_db_connection()
+    alerts = conn.execute("SELECT * FROM security_alerts ORDER BY id DESC LIMIT 10").fetchall()
+    conn.close()
+    return [dict(alert) for alert in alerts]
+
+@app.route('/api/monitoring-data', methods=['GET'])
+def get_monitoring_data():
+    try:
+        alerts = get_security_alerts()
+        return jsonify({
+            "system_resources": get_latest_system_info(),
+            "network_stats": get_latest_network_info(),
+            "server_logs": get_recent_logs(),
+            "security_alerts": len(alerts)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
