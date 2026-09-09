@@ -75,6 +75,12 @@
         tr:hover {
             background-color: #334155;
         }
+	#net-status {
+	    font-size: 1.8rem;
+	    font-weight: bold;
+	    margin-top:20px;
+	    color:#00ffcc;
+	}
         .status-running { color: #4ade80; font-weight: bold; }
         .status-down { color: #f87171; font-weight: bold; }
     </style>
@@ -103,7 +109,7 @@
         </div>
         <div class="card">
             <h3>Network Status</h3>
-            <div class="value" id="net-status">OFFLINE</div>
+            <div class="metric-value" id="net-status">OFFLINE</div>
         </div>
         <div class="card" style="border-left-color: #f87171;">
             <h3>Security Alerts</h3>
@@ -134,7 +140,7 @@
                 <th>Level</th>
             </tr>
         </thead>
-        <tbody id="logs-table-body">
+        <tbody id="log-table-body">
             <tr><td colspan="4" style="text-align: center;">Loading logs...</td></tr>
         </tbody>
     </table>
@@ -221,14 +227,14 @@
                 ramChart.update();
 
                 // 3. Update Logs Table
-                const logsBody = document.getElementById('logs-table-body');
+                const logsBody = document.getElementById('log-table-body');
                 logsBody.innerHTML = '';
                 if (data.logs && data.logs.length > 0) {
                     data.logs.forEach(log => {
                         const row = `<tr>
                             <td>${log.id || '-'}</td>
                             <td>${log.timestamp || '-'}</td>
-                            <td>${log.message || log.log_message || '-'}</td>
+                            <td>${log.message || '-'}</td>
                             <td>${log.level || 'INFO'}</td>
                         </tr>`;
                         logsBody.innerHTML += row;
