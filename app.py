@@ -1,53 +1,63 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-import sqlite3
+import psutil
+import socket 
+import time 
+from datetime import datetime
 
-app = Flask(__name__)
+app=Flask(__name__)
 CORS(app)
 
-DB_NAME = "monitoring.db"
-
-def get_db_connection():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-@app.route('/api/monitoring-data', methods=['GET'])
+boot_time = psutil.boot_time()
+logs_list=[]
+log_id_counter=1	
+@app.route('/api/monitoring-data')
 def get_monitoring_data():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+	global log_id_counter,logs_list
+	uptime_seconds = int(time.time() - boot_time)
+	days,remainder=divmod(uptime_seconds,86400)
+	hours,remainder=divmod(uptime_seconds,3600)
+	minutes,seconds=divmod(remainder,60)
+	uptime_str = f"{days}d {hours}h {minutes}m"
+	
+	
+	disk=psutil.disk_usage('/')
+	cpu=psutil.cpu_percent(interval=0.5)
+	ram=psutil.virtual_memory().percent
+	
+	alerts=0
+	if cpu>70: alerts +=1
+	if ram>80:alerts += 1
+	
+	now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+	new_logs={	
+		"id":log_id_counter,
+		"timestamp":now_str,
+		"message": f"System Check: CPU ({cpu}%),RAM ({ram}%)",
+		"Level": "Warning" if (cpu > 70 or ram >80) else "INFO"
+	}
+	logs_list=[]
+	log_id_counter = 1
 
-        cursor.execute("SELECT * FROM system_resources ORDER BY id DESC LIMIT 1")
-        res_row = cursor.fetchone()
-        system_resources = dict(res_row) if res_row else {
-            "uptime": "N/A", "cpu_usage": 0, "ram_usage": "0", "disk_usage": "0"
-        }
+	if len(logs_list) > 10:
+        	logs_list = logs_list[:10]
 
-        cursor.execute("SELECT * FROM network_stats ORDER BY id DESC LIMIT 1")
-        net_row = cursor.fetchone()
-        network_stats = dict(net_row) if net_row else {
-            "ip_address": "127.0.0.1", "net_status": "RUNNING"
-        }
-
-        cursor.execute("SELECT COUNT(*) as alert_count FROM security_alerts")
-        alert_row = cursor.fetchone()
-        security_alerts = alert_row["alert_count"] if alert_row else 0
-
-        cursor.execute("SELECT * FROM server_logs ORDER BY id DESC LIMIT 5")
-        logs_rows = cursor.fetchall()
-        server_logs = [dict(row) for row in logs_rows]
-
-        conn.close()
-
-        return jsonify({
-            "system_resources": system_resources,
-            "network_stats": network_stats,
-            "security_alerts": security_alerts,
-            "server_logs": server_logs
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+	return jsonify({
+	"server_status": "Running",
+	"ip_address": socket.gethostbyname(socket.gethostname()),
+	"uptime": uptime_str,
+	"security_warnings": alerts,
+	"cpu_usage": cpu,
+	"ram_usage": ram,
+	"disk_used": round(disk.used /(1024**3),2),
+	"disk_free": round(disk.free / (1024**3),2),
+	"logs": logs_list,
+	"network_stats":{
+		"net_status": "ONLINE"}
+	})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0',port=5000,debug=True)
+
+
+

@@ -141,7 +141,7 @@
 
     <script>
         // API URL ကို Browser ဖွင့်ထားသည့် IP/Hostname သို့ အလိုအလျောက် ယူမည်
-        const API_URL = `http://${window.location.hostname}:5000/api/monitoring-data`;
+        const API_URL = 'http://127.0.0.1:5000/api/monitoring-data';
 
         // Chart.js Setup
         const maxDataPoints = 10;
@@ -192,19 +192,19 @@
                 const data = await response.json();
 
                 // 1. Update Cards
-                const sys = data.system_resources || {};
-                const net = data.network_stats || {};
+                const sys = data;
+                const net = data.network_stats || {}; 
+		const netStatusElem = document.getElementById('net-status');
+	     	netStatusElem.innerText =net.net_status || 'OFFLINE';
+		netStatusElem.className = 'value' + (net.net_status === 'ONLINE'|| net.net_status ==='RUNNING' ? 'status-running' : 'status-down');
 
                 document.getElementById('cpu-usage').innerText = (sys.cpu_usage || 0) + '%';
-                document.getElementById('ram-usage').innerText = (sys.ram_usage || 0) + ' MB';
-                document.getElementById('disk-usage').innerText = (sys.disk_usage || 0) + ' GB';
+                document.getElementById('ram-usage').innerText = (sys.ram_usage || 0) + ' %';
+                document.getElementById('disk-usage').innerText = (sys.disk_used || 0) + ' GB';
                 document.getElementById('uptime').innerText = sys.uptime || 'N/A';
                 
-                const netStatusElem = document.getElementById('net-status');
-                netStatusElem.innerText = net.net_status || 'UNKNOWN';
-                netStatusElem.className = 'value ' + (net.net_status === 'RUNNING' ? 'status-running' : 'status-down');
 
-                document.getElementById('security-alerts').innerText = data.security_alerts || 0;
+                document.getElementById('security-alerts').innerText = data.security_warnings || 0;
 
                 // 2. Update Charts
                 const now = new Date().toLocaleTimeString();
@@ -223,8 +223,8 @@
                 // 3. Update Logs Table
                 const logsBody = document.getElementById('logs-table-body');
                 logsBody.innerHTML = '';
-                if (data.server_logs && data.server_logs.length > 0) {
-                    data.server_logs.forEach(log => {
+                if (data.logs && data.logs.length > 0) {
+                    data.logs.forEach(log => {
                         const row = `<tr>
                             <td>${log.id || '-'}</td>
                             <td>${log.timestamp || '-'}</td>

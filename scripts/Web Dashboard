@@ -96,18 +96,7 @@
                         </tr>
                     </thead>
                     <tbody id="logs-table-body">
-                        <tr>
-                            <td>2026-09-08 18:35:10</td>
-                            <td><span class="badge bg-primary">Access Log</span></td>
-                            <td><span class="badge bg-success">200 OK</span></td>
-                            <td>GET /api/status - 192.168.1.45</td>
-                        </tr>
-                        <tr>
-                            <td>2026-09-08 18:34:02</td>
-                            <td><span class="badge bg-danger">Security</span></td>
-                            <td><span class="badge bg-warning text-dark">401 Unauthorized</span></td>
-                            <td>Failed SSH login attempt from 10.0.0.88</td>
-                        </tr>
+                        
                     </tbody>
                 </table>
             </div>
@@ -157,7 +146,7 @@
             }
         });
 
-        const API_URL = "http://localhost:5000/api/monitoring-data";
+        const API_URL = "http://127.0.0.1:5000/api/monitoring-data";
 
         async function fetchMonitoringData() {
             try {
@@ -165,10 +154,10 @@
                 if (!res.ok) return;
                 const data = await res.json();
 
-                if(data.server_status) document.getElementById('server-status').innerText = data.server_status;
-                if(data.ip_address) document.getElementById('ip-address').innerText = data.ip_address;
-                if(data.uptime) document.getElementById('uptime').innerText = data.uptime;
-                if(data.security_warnings !== undefined) document.getElementById('security-alerts').innerText = data.security_warnings + " Alerts";
+                if(document.getElementById('server-status')) document.getElementById('server-status').innerText = data.server_status;
+                if(document.getElementById('ip-address')) document.getElementById('ip-address').innerText=data.ip_address;
+                if(document.getElementById('uptime')) document.getElementById('uptime').innerText = data.uptime;
+                if(document.getElementById('security-alerts')) document.getElementById('security-alerts').innerText = data.security_warnings ;
 
                 if(data.cpu_usage !== undefined && data.ram_usage !== undefined) {
                     resourceChart.data.datasets[0].data = [data.cpu_usage, data.ram_usage];
@@ -179,11 +168,37 @@
                     diskChart.data.datasets[0].data = [data.disk_used, data.disk_free];
                     diskChart.update();
                 }
+	if (data.logs && Array.isArray(data.logs)){
+	const tableBody =document.getElementById('logs-table-body');
+	tableBody.innerHTML = ' ';
+	let alertCount =0;
+	data.logs.forEach(log=> {
+	const isSecurityAlert=log.log_type ==='Security' || log.status_code >= 400;
+	if (isSecurityAlert) {
+	alertCount++;
+	}
+	const logTypeBadge = isSecurityAlert ? 'bg-danger' : 'bg-primary';
+	const statusBadge = log.status_code >= 400 ? 'bg-warning text-dark' : 'bg-success';
+	const row=`<tr>
+		<td>${log.timestamp}</td>
+		<td><span class="badge ${logTypeBadge}">${log.log_type}</span></td>
+		<td><span class="badge ${statusBadge}">${log.status_code}</span></td>
+		<td>${log.activity_details}</td>
+		</tr>
+	`;
+	tableBody.insertAdjacentHTML('beforeend',row);
+});
+document.getElementById('security-alerts').innerText = alertCount + "Alerts";
+}else if (data.security_warnings !== undefined){
+	document.getElementById('security-alerts').innerText=data.security_warnings+"Alerts";
+}
             } catch (err) {
+	console.error("error occurs",err);
             }
         }
-
-        setInterval(fetchMonitoringData, 5000);
+fetchMonitoringData();
+setInterval(fetchMonitoringData,5000);
+       
     </script>
 </body>
 </html>
