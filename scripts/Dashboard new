@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Server Monitoring Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card-custom { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 12px; }
+        .text-muted-custom { color: #94a3b8; }
+        .chart-container { position: relative; height: 260px; width: 100%; }
+        .table-custom { color: #f8fafc; }
+        .table-custom th { background-color: #1e293b; color: #94a3b8; border-bottom: 2px solid #334155; }
+        .table-custom td { border-bottom: 1px solid #334155; }
+    </style>
+</head>
+<body class="p-4">
+
+    <div class="container-fluid">
+        <div class="d-flex align-items-center mb-4">
+            <i class="fa-solid fa-chart-line text-primary fs-3 me-3"></i>
+            <h3 class="fw-bold m-0">Linux Monitor <span class="fs-6 text-muted-custom fw-normal">| Live System Status</span></h3>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card-custom p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted-custom small">APACHE WEB SERVER</div>
+                        <h4 class="fw-bold text-success m-0" id="server-status">RUNNING</h4>
+                    </div>
+                    <i class="fa-solid fa-server fs-1 text-success opacity-50"></i>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted-custom small">SERVER IP ADDRESS</div>
+                        <h4 class="fw-bold text-info m-0" id="ip-address">192.168.1.100</h4>
+                    </div>
+                    <i class="fa-solid fa-network-wired fs-1 text-info opacity-50"></i>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted-custom small">SYSTEM UPTIME</div>
+                        <h4 class="fw-bold text-warning m-0" id="uptime">3d 14h 22m</h4>
+                    </div>
+                    <i class="fa-solid fa-clock fs-1 text-warning opacity-50"></i>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted-custom small">SECURITY ALERTS</div>
+                        <h4 class="fw-bold text-danger m-0" id="security-alerts">0 Alerts</h4>
+                    </div>
+                    <i class="fa-solid fa-shield-halved fs-1 text-danger opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-8">
+                <div class="card-custom p-3">
+                    <h6 class="text-muted-custom mb-3"><i class="fa-solid fa-microchip me-2"></i>System Resource Usage (%)</h6>
+                    <div class="chart-container">
+                        <canvas id="resourceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card-custom p-3">
+                    <h6 class="text-muted-custom mb-3"><i class="fa-solid fa-hard-drive me-2"></i>Disk Storage</h6>
+                    <div class="chart-container">
+                        <canvas id="diskChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-custom p-3">
+            <h6 class="text-muted-custom mb-3"><i class="fa-solid fa-list-check me-2"></i>Recent Access Logs & Security Activity</h6>
+            <div class="table-responsive">
+                <table class="table table-custom align-middle m-0">
+                    <thead>
+                        <tr>
+                            <th>TIMESTAMP</th>
+                            <th>LOG TYPE</th>
+                            <th>STATUS CODE</th>
+                            <th>ACTIVITY DETAILS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-table-body">
+                        <tr>
+                            <td>2026-09-08 18:35:10</td>
+                            <td><span class="badge bg-primary">Access Log</span></td>
+                            <td><span class="badge bg-success">200 OK</span></td>
+                            <td>GET /api/status - 192.168.1.45</td>
+                        </tr>
+                        <tr>
+                            <td>2026-09-08 18:34:02</td>
+                            <td><span class="badge bg-danger">Security</span></td>
+                            <td><span class="badge bg-warning text-dark">401 Unauthorized</span></td>
+                            <td>Failed SSH login attempt from 10.0.0.88</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = '#334155';
+
+        const ctxResource = document.getElementById('resourceChart').getContext('2d');
+        const resourceChart = new Chart(ctxResource, {
+            type: 'bar',
+            data: {
+                labels: ['CPU Usage (%)', 'RAM Usage (%)'],
+                datasets: [{
+                    label: 'Usage (%)',
+                    data: [0, 0],
+                    backgroundColor: ['#38bdf8', '#f59e0b'],
+                    borderRadius: 8,
+                    barThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, max: 100 } },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        const ctxDisk = document.getElementById('diskChart').getContext('2d');
+        const diskChart = new Chart(ctxDisk, {
+            type: 'doughnut',
+            data: {
+                labels: ['Used Space', 'Free Space'],
+                datasets: [{
+                    data: [0, 100],
+                    backgroundColor: ['#ef4444', '#22c55e'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        const API_URL = "http://localhost:5000/api/monitoring-data";
+
+        async function fetchMonitoringData() {
+            try {
+                const res = await fetch(API_URL);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                if (data.system_resources) {
+                    if (data.system_resources.uptime) document.getElementById('uptime').innerText = data.system_resources.uptime;
+                    
+                    let cpu = parseFloat(data.system_resources.cpu_usage) || 0;
+                    let ram = parseFloat(data.system_resources.ram_usage) || 0;
+                    resourceChart.data.datasets[0].data = [cpu, ram];
+                    resourceChart.update();
+
+                    if (data.system_resources.disk_usage) {
+                        let diskUsed = parseFloat(data.system_resources.disk_usage) || 0;
+                        diskChart.data.datasets[0].data = [diskUsed, 100 - diskUsed];
+                        diskChart.update();
+                    }
+                }
+
+                if (data.network_stats) {
+                    if (data.network_stats.ip_address) document.getElementById('ip-address').innerText = data.network_stats.ip_address;
+                    if (data.network_stats.net_status) document.getElementById('server-status').innerText = data.network_stats.net_status;
+                }
+
+                if (data.security_alerts !== undefined) {
+                    document.getElementById('security-alerts').innerText = data.security_alerts + " Alerts";
+                }
+
+                if (data.server_logs && data.server_logs.length > 0) {
+                    const tbody = document.getElementById('logs-table-body');
+                    tbody.innerHTML = ''; 
+
+                    data.server_logs.slice(0, 5).forEach(log => {
+                        const tr = document.createElement('tr');
+                        const isSuccess = log.status_code >= 200 && log.status_code < 300;
+                        const statusBadge = isSuccess ? 'bg-success' : 'bg-warning text-dark';
+                        const typeBadge = log.log_type === 'Security' ? 'bg-danger' : 'bg-primary';
+
+                        tr.innerHTML = `
+                            <td>${log.timestamp || '-'}</td>
+                            <td><span class="badge ${typeBadge}">${log.log_type || 'System'}</span></td>
+                            <td><span class="badge ${statusBadge}">${log.status_code || 200}</span></td>
+                            <td>${log.request_method || ''} ${log.log_message || ''} - ${log.client_ip || ''}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (err) {
+            }
+        }
+
+        setInterval(fetchMonitoringData, 5000);
+    </script>
+</body>
+</html>
